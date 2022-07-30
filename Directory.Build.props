@@ -1,0 +1,10 @@
+<Project>
+	<PropertyGroup>
+		<CVRPath>D:\Programs\Steam\steamapps\common\ChilloutVR\</CVRPath>
+	</PropertyGroup>
+	<Target Name="BuildScripts" AfterTargets="AfterBuild">
+		<Exec Condition=" '$(OS)' == 'Windows_NT' " Command='
+			COPY "$(TargetPath)" "$(CVRPath)/Mods" > NUL
+		'/>
+    </Target>
+</Project>
