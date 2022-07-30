@@ -8,7 +8,7 @@ using MelonLoader;
 using UnityEngine;
 using System.Reflection;
 
-[assembly: MelonInfo(typeof(elianel.ThirdPerson), "ThirdPerson", "0.0.2", "elian")]
+[assembly: MelonInfo(typeof(elianel.ThirdPerson), "ThirdPerson", "0.0.1", "elian")]
 [assembly: MelonGame("ChilloutVR")]
 [assembly: MelonColor(ConsoleColor.DarkYellow)]
 
