@@ -1,28 +1,29 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using ABI_RC.Core;
 using ABI_RC.Core.InteractionSystem;
 using MelonLoader;
 using UnityEngine;
-using System.Reflection;
 
-[assembly: MelonInfo(typeof(elianel.ThirdPerson), "ThirdPerson", "0.0.1", "elian")]
+[assembly: MelonInfo(typeof(ThirdPerson.ThirdPerson), "ThirdPerson", "0.0.2", "elian")]
 [assembly: MelonGame("ChilloutVR")]
 [assembly: MelonColor(ConsoleColor.DarkYellow)]
 
-namespace elianel
+namespace ThirdPerson
 {
     public class ThirdPerson : MelonMod
     {
         internal static MelonLogger.Instance Logger;
-        public static bool State { 
+        private static bool _previousState;
+        private static bool State {
             get => _state;
-            set { 
+            set {
+                _previousState = _state;
                 _state = value;
                 _ourCam.SetActive(_state);
-                Logger.Msg("Set state to: " + _state);
             } 
         }
         public override void OnApplicationStart() 
@@ -31,11 +32,11 @@ namespace elianel
             MelonCoroutines.Start(SetupCameras());
             HarmonyInstance.Patch(
                 typeof(ViewManager).GetMethods().FirstOrDefault(x => x.Name == nameof(ViewManager.UiStateToggle) && x.GetParameters().Length > 0),
-                typeof(ThirdPerson).GetMethod(nameof(ThirdPerson.ToggleBigMenu), BindingFlags.NonPublic | BindingFlags.Static).ToNewHarmonyMethod()
+                typeof(ThirdPerson).GetMethod(nameof(ToggleMainMenu), BindingFlags.NonPublic | BindingFlags.Static).ToNewHarmonyMethod()
             );
             HarmonyInstance.Patch(
                 typeof(CVR_MenuManager).GetMethod(nameof(CVR_MenuManager.ToggleQuickMenu)),
-                typeof(ThirdPerson).GetMethod(nameof(ThirdPerson.ToggleQuickmenu), BindingFlags.NonPublic | BindingFlags.Static).ToNewHarmonyMethod()
+                typeof(ThirdPerson).GetMethod(nameof(ToggleQuickMenu), BindingFlags.NonPublic | BindingFlags.Static).ToNewHarmonyMethod()
             );
         }
         public override void OnUpdate()
@@ -45,53 +46,40 @@ namespace elianel
                 if (Input.GetAxis("Mouse ScrollWheel") > 0f) IncrementDist();
                 else if (Input.GetAxis("Mouse ScrollWheel") < 0f) DecrementDist();
             }
-            if (Input.GetKey(KeyCode.LeftControl))
-            {
-                if (Input.GetKeyDown(KeyCode.T)) State = !State;
-                if (!State) return;
-                if (!Input.GetKeyDown(KeyCode.Y)) return;
-                RelocateCam((CameraLocation)((((int)_currentLocation) + 1) % Enum.GetValues(typeof(CameraLocation)).Length), true);
-            }
 
+            if (!Input.GetKey(KeyCode.LeftControl)) return;
+            if (Input.GetKeyDown(KeyCode.T)) State = !State;
+            if (!State) return;
+            if (!Input.GetKeyDown(KeyCode.Y)) return;
+            RelocateCam((CameraLocation)(((int)_currentLocation + 1) % Enum.GetValues(typeof(CameraLocation)).Length), true);
         }
-        private static void ToggleBigMenu(bool __0)
+        #region Menu Patches
+        private const BindingFlags Flags = BindingFlags.NonPublic | BindingFlags.Instance;
+        private static readonly FieldInfo MainMenuOpen =
+            typeof(ViewManager).GetField("_gameMenuOpen", Flags);
+        private static readonly FieldInfo QuickMenuOpen =
+            typeof(CVR_MenuManager).GetField("_quickMenuOpen", Flags);
+        private static bool IsMmOpen => (bool)MainMenuOpen.GetValue(ViewManager.Instance);
+        private static bool IsQmOpen => (bool)QuickMenuOpen.GetValue(CVR_MenuManager.Instance);
+        private static void ToggleMainMenu(bool __0) => ToggleMenus(__0, true);
+        private static void ToggleQuickMenu(bool __0) => ToggleMenus(__0, false);
+        private static void ToggleMenus(bool isOpen, bool isMain)
         {
-            if (!State && !_antiStateBig) return;
-            else if(!State && _antiStateBig && !__0)
+            if ((IsMmOpen && !isMain) || (IsQmOpen && isMain)) return;
+            State = State switch
             {
-                State = true;
-                _antiStateBig = false;
-            }
-            else if (State && __0)
-            {
-                State = false;
-                _antiStateBig = true;
-            }
-            else _antiStateBig = false;
-
+                false when !isOpen && _previousState => true,
+                true when isOpen => false,
+                _ => State
+            };
         }
-        private static void ToggleQuickmenu(bool __0)
-        {
-            if (!State && !_antiStateSmol) return;
-            else if (!State && _antiStateSmol && !__0)
-            {
-                State = true;
-                _antiStateSmol = false;
-            }
-            else if (State && __0)
-            {
-                State = false;
-                _antiStateSmol = true;
-            }
-            else _antiStateSmol = false;
-        }
+        #endregion
         private static IEnumerator SetupCameras()
         {
             while (RootLogic.Instance == null) yield return null;
             while (RootLogic.Instance.activeCamera == null) yield return null;
             _defaultCam = RootLogic.Instance.activeCamera.gameObject;
-            _ourCam = new GameObject();
-            _ourCam.gameObject.name = "ThirdPersonCameraObj";
+            _ourCam = new GameObject { gameObject = { name = "ThirdPersonCameraObj" } };
             _ourCam.transform.SetParent(_defaultCam.transform);
             RelocateCam(CameraLocation.Default);
             _ourCam.gameObject.SetActive(false);
@@ -141,18 +129,12 @@ namespace elianel
             RightSide,
             LeftSide
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ResetDist() => _dist = 0;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void IncrementDist() { _dist += 0.25f; RelocateCam(_currentLocation); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void DecrementDist() { _dist -= 0.25f; RelocateCam(_currentLocation); }
-        private static float _dist = 0;
-        private static GameObject _ourCam;
-        private static GameObject _defaultCam;
-        private static bool _state = false;
-        private static bool _antiStateBig = false;
-        private static bool _antiStateSmol = false;
+        private static float _dist;
+        private static bool _state;
+        private static GameObject _ourCam, _defaultCam;
         private static CameraLocation _currentLocation = CameraLocation.Default;
     }
 }
