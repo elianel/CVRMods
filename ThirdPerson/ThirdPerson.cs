@@ -8,7 +8,7 @@ using ABI_RC.Core.InteractionSystem;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(ThirdPerson.ThirdPerson), "ThirdPerson", "0.0.2", "elian")]
+[assembly: MelonInfo(typeof(ThirdPerson.ThirdPerson), "ThirdPerson", "0.0.2", "elian & Davi")]
 [assembly: MelonGame("ChilloutVR")]
 [assembly: MelonColor(ConsoleColor.DarkYellow)]
 

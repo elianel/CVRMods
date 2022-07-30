@@ -10,6 +10,7 @@
     <RootNamespace>elianel</RootNamespace>
     <AssemblyName>ThirdPerson</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>latest</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -32,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\..\..\Programs\Steam\steamapps\common\ChilloutVR\MelonLoader\0Harmony.dll</HintPath>
+      <HintPath>..\..\..\..\Programs\Steam\steamapps\common\ChilloutVR\MelonLoader\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\..\..\..\Programs\Steam\steamapps\common\ChilloutVR\ChilloutVR_Data\Managed\Assembly-CSharp.dll</HintPath>
